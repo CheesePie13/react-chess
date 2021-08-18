@@ -1,0 +1,48 @@
+/**
+ * Use border-box on all elements.
+ * (size = content + padding + border) 
+ */
+html {
+	box-sizing: border-box;
+}
+
+*, *:before, *:after {
+	box-sizing: inherit;
+}
+
+table.board {
+	margin-left: auto;
+	margin-right: auto;
+	border-collapse: separate;
+	border: 1px solid black;
+	td {
+		width: 80px;
+		height: 80px;
+		border: 1px solid black;
+		background-color: white;
+
+		&.checkered {
+			background-color: grey;
+		}
+		&.selected {
+			border: 4px solid black;
+		}
+		&.highlighted {
+			background-color: #98d6fa;
+		}
+		&.clickable {
+			cursor: pointer;
+		}
+
+		img.piece {
+			width: 70px;
+			height: 70px;
+			display: block;
+			margin: auto;
+		}
+
+		// &:hover {
+		// 	background-color: #dddddd;
+		// }
+	}
+}

@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "noImplicitAny": true,
+    "strict": true,
+    "module": "es6",
+    "target": "es5",
+    "allowJs": true,
+    "sourceMap": true,
+    "jsx": "react-jsx",
+    "moduleResolution": "Node",
+    "lib": ["es2019", "dom"]
+  },
+  "files": ["src/index.tsx", "src/chess-pieces.tsx", "src/custom.d.ts"]
+}
