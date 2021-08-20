@@ -1,11 +1,10 @@
 import { useState, useMemo } from "react";
 import ReactDOM from "react-dom";
-import update from 'immutability-helper';
 import "./chess.scss";
 import { Player, Piece, TileData, GRID_WIDTH, GRID_HEIGHT } from "./constants";
 import { PieceImages } from "./chess-pieces";
 import * as Utils from "./utils";
-import { findPossibleMoves } from "./chess-moves"
+import { findAllPossibleMoves } from "./chess-moves"
 
 function ChessApp() {
 	const [tiles, setTiles] = useState(Utils.createInitialBoard);
@@ -16,14 +15,46 @@ function ChessApp() {
 			<Board 
 				tiles={tiles} playerTurn={playerTurn} 
 				onMovePiece={(fromIdx, toIdx) => {
-					// Get tile with hasMoved as true
-					let tile = update(tiles[fromIdx], {hasMoved: {$set: true}});
+					let tile = tiles.get(fromIdx);
+					if (tile === undefined) {
+						return;
+					}
 
-					// Move tile in grid
-					setTiles(update(tiles, {
-						[fromIdx]: {$set: null}, 
-						[toIdx]: {$set: tile}
-					}));
+					let newTile = {...tile, hasMoved: true};
+					let newTiles = new Map(tiles);
+					
+					newTiles.delete(fromIdx);
+					newTiles.set(toIdx, newTile);
+
+					// Check if castling
+					let [xDelta, yDelta] = Utils.idxSub(toIdx, fromIdx);
+					if (tile.piece === Piece.King && Math.abs(xDelta) > 1) {
+						let [toX, toY] = Utils.idxToCoord(toIdx);
+						if (xDelta > 1) {
+							let rookTileIdx = Utils.coordToIdx(GRID_WIDTH - 1, toY);
+							let rookTile = tiles.get(rookTileIdx);
+							Utils.assertIsDefined(rookTile, "Rook is missing but castling move should have already been validate.");
+
+							if (rookTile !== undefined) {
+								let newRookTile = {...rookTile, hasMoved: true};
+								let newRookTileIdx = Utils.coordToIdx(toX - 1, toY);
+								newTiles.set(newRookTileIdx, newRookTile);
+								newTiles.delete(rookTileIdx);
+							}
+							
+						} else if (xDelta < 1) {
+							let rookTileIdx = Utils.coordToIdx(0, toY);
+							let rookTile = tiles.get(rookTileIdx);
+							Utils.assertIsDefined(rookTile, "Rook is missing but castling move should have already been validate.");
+
+							let newRookTile = {...rookTile, hasMoved: true};
+							let newRookTileIdx = Utils.coordToIdx(toX + 1, toY);
+							newTiles.set(newRookTileIdx, newRookTile);
+							newTiles.delete(rookTileIdx);
+						}
+					}
+
+					setTiles(newTiles);
 					setPlayerTurn(playerTurn === Player.White ? Player.Black : Player.White);
 				}}
 			/>
@@ -38,24 +69,27 @@ function ChessApp() {
 	);
 }
 
-type BoardProps = {tiles: Array<TileData|null>, playerTurn: Player, onMovePiece: (fromIdx: number, toIdx: number) => void};
+type BoardProps = {tiles: ReadonlyMap<number,TileData>, playerTurn: Player, onMovePiece: (fromIdx: number, toIdx: number) => void};
 function Board({tiles, playerTurn, onMovePiece}: BoardProps) {
 	const [selectedTileIdx, setSelectedTileIdx] = useState<number|null>(null);
-	const possibleMoves = useMemo(() => findPossibleMoves(selectedTileIdx, tiles), [selectedTileIdx, tiles])
+	const allPossibleMoves = useMemo(() => findAllPossibleMoves(tiles, playerTurn), [tiles, playerTurn]);
+	const selectedPossibleMoves = selectedTileIdx === null ? [] : allPossibleMoves.get(selectedTileIdx) || [];
 
 	let tileRenders: Array<Array<JSX.Element>> = [];
 	for (let y = 0; y < GRID_HEIGHT; y++) {
 		tileRenders[y] = [];
 		for (let x = 0; x < GRID_WIDTH; x++) {
 			let idx = Utils.coordToIdx(x, y);
-			let tile = tiles[idx];
+			let tile = tiles.get(idx);
 			let selected = selectedTileIdx === idx;
 			
 			let selectable = selectedTileIdx != null 
-				? possibleMoves.includes(idx) || selectedTileIdx === idx
+				? selectedPossibleMoves.includes(idx) || selectedTileIdx === idx
 				: tile?.owner === playerTurn;
 
-			let highlighted = selectedTileIdx != null && possibleMoves.includes(idx);
+			let possibleMoves = allPossibleMoves.get(idx);
+			let highlighted = (selectedTileIdx !== null && selectedPossibleMoves.includes(idx)) 
+				|| (selectedTileIdx === null && possibleMoves !== undefined && possibleMoves.length > 0);
 
 			tileRenders[y][x] = (
 				<Tile 
@@ -67,7 +101,7 @@ function Board({tiles, playerTurn, onMovePiece}: BoardProps) {
 						if (selectedTileIdx === idx) {
 							setSelectedTileIdx(null);
 						} else if (selectedTileIdx != null) {
-							if (possibleMoves.includes(idx)) {
+							if (selectedPossibleMoves.includes(idx)) {
 								onMovePiece(selectedTileIdx, idx);
 							}
 							setSelectedTileIdx(null);
@@ -93,7 +127,7 @@ function Board({tiles, playerTurn, onMovePiece}: BoardProps) {
 	);
 }
 
-type TileProps = {tile: TileData|null, idx: number, selected: boolean, clickable: boolean, highlighted: boolean, onClick:() => void};
+type TileProps = {tile?: TileData|null, idx: number, selected: boolean, clickable: boolean, highlighted: boolean, onClick:() => void};
 function Tile({tile, idx, selected, clickable, highlighted, onClick}: TileProps) {
 	let tileClass = "";
 	let [x, y] = Utils.idxToCoord(idx);
