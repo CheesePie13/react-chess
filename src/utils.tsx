@@ -54,12 +54,12 @@ export function createInitialBoard(): ReadonlyMap<number,TileData> {
 	return new Map([
 		// Black pieces at the top
 		[ 0, {owner: Player.Black, piece: Piece.Rook,   hasMoved: false}],
-		[ 1, {owner: Player.Black, piece: Piece.Bishop, hasMoved: false}],
-		[ 2, {owner: Player.Black, piece: Piece.Knight, hasMoved: false}],
+		[ 1, {owner: Player.Black, piece: Piece.Knight, hasMoved: false}],
+		[ 2, {owner: Player.Black, piece: Piece.Bishop, hasMoved: false}],
 		[ 3, {owner: Player.Black, piece: Piece.Queen,  hasMoved: false}],
 		[ 4, {owner: Player.Black, piece: Piece.King,   hasMoved: false}],
-		[ 5, {owner: Player.Black, piece: Piece.Knight, hasMoved: false}],
-		[ 6, {owner: Player.Black, piece: Piece.Bishop, hasMoved: false}],
+		[ 5, {owner: Player.Black, piece: Piece.Bishop, hasMoved: false}],
+		[ 6, {owner: Player.Black, piece: Piece.Knight, hasMoved: false}],
 		[ 7, {owner: Player.Black, piece: Piece.Rook,   hasMoved: false}],
 
 		[ 8, {owner: Player.Black, piece: Piece.Pawn,   hasMoved: false}],
@@ -82,12 +82,12 @@ export function createInitialBoard(): ReadonlyMap<number,TileData> {
 		[55, {owner: Player.White, piece: Piece.Pawn,   hasMoved: false}],
 		
 		[56, {owner: Player.White, piece: Piece.Rook,   hasMoved: false}],
-		[57, {owner: Player.White, piece: Piece.Bishop, hasMoved: false}],
-		[58, {owner: Player.White, piece: Piece.Knight, hasMoved: false}],
+		[57, {owner: Player.White, piece: Piece.Knight, hasMoved: false}],
+		[58, {owner: Player.White, piece: Piece.Bishop, hasMoved: false}],
 		[59, {owner: Player.White, piece: Piece.Queen,  hasMoved: false}],
 		[60, {owner: Player.White, piece: Piece.King,   hasMoved: false}],
-		[61, {owner: Player.White, piece: Piece.Knight, hasMoved: false}],
-		[62, {owner: Player.White, piece: Piece.Bishop, hasMoved: false}],
+		[61, {owner: Player.White, piece: Piece.Bishop, hasMoved: false}],
+		[62, {owner: Player.White, piece: Piece.Knight, hasMoved: false}],
 		[63, {owner: Player.White, piece: Piece.Rook,   hasMoved: false}]
 	]);
 }

@@ -6,12 +6,39 @@ import { PieceImages } from "./chess-pieces";
 import * as Utils from "./utils";
 import { findAllPossibleMoves } from "./chess-moves"
 
+function PawnPromotionModal({playerTurn, onPieceSelected}: {playerTurn: Player, onPieceSelected: ((piece: Piece) => void)|null}) {
+	if (onPieceSelected === null) {
+		return null;
+	}
+
+	let pieces = [Piece.Queen, Piece.Rook, Piece.Bishop, Piece.Knight];
+	let pieceImages = PieceImages;
+
+	let modal = (
+		<div className="modal">
+			<div className="modal-content">
+				{pieces.map(piece => 
+					<img className="piece" src={pieceImages.get(playerTurn)?.get(piece) || undefined} onClick={() => onPieceSelected(piece)} />
+				)}
+			</div>
+		</div>
+	);
+
+	let modalContainer = document.getElementById("modal-container");
+	if (modalContainer === null) {
+		return null;
+	}
+	return ReactDOM.createPortal(modal, modalContainer);
+}
+
 function ChessApp() {
 	const [tiles, setTiles] = useState(Utils.createInitialBoard);
 	const [playerTurn, setPlayerTurn] = useState(Player.White);
+	const [pawnPromotionModalCallback, setPawnPromotionModalCallback] = useState<((piece: Piece) => void)|null>(null);
 
 	return (
 		<div>
+			<PawnPromotionModal playerTurn={playerTurn} onPieceSelected={pawnPromotionModalCallback}/>
 			<Board 
 				tiles={tiles} playerTurn={playerTurn} 
 				onMovePiece={(fromIdx, toIdx) => {
@@ -27,9 +54,9 @@ function ChessApp() {
 					newTiles.set(toIdx, newTile);
 
 					// Check if castling
+					let [toX, toY] = Utils.idxToCoord(toIdx);
 					let [xDelta, yDelta] = Utils.idxSub(toIdx, fromIdx);
 					if (tile.piece === Piece.King && Math.abs(xDelta) > 1) {
-						let [toX, toY] = Utils.idxToCoord(toIdx);
 						if (xDelta > 1) {
 							let rookTileIdx = Utils.coordToIdx(GRID_WIDTH - 1, toY);
 							let rookTile = tiles.get(rookTileIdx);
@@ -41,7 +68,7 @@ function ChessApp() {
 								newTiles.set(newRookTileIdx, newRookTile);
 								newTiles.delete(rookTileIdx);
 							}
-							
+
 						} else if (xDelta < 1) {
 							let rookTileIdx = Utils.coordToIdx(0, toY);
 							let rookTile = tiles.get(rookTileIdx);
@@ -52,6 +79,17 @@ function ChessApp() {
 							newTiles.set(newRookTileIdx, newRookTile);
 							newTiles.delete(rookTileIdx);
 						}
+					}
+
+					// Check if promoting pawn
+					if (tile.piece === Piece.Pawn && Utils.idxAddRelative(toIdx, playerTurn, 0, 1) === null) {
+						setPawnPromotionModalCallback(() => (piece: Piece) => {
+							newTile.piece = piece;
+							setTiles(newTiles);
+							setPlayerTurn(playerTurn === Player.White ? Player.Black : Player.White);
+							setPawnPromotionModalCallback(null);
+						});
+						return;
 					}
 
 					setTiles(newTiles);
@@ -74,6 +112,13 @@ function Board({tiles, playerTurn, onMovePiece}: BoardProps) {
 	const [selectedTileIdx, setSelectedTileIdx] = useState<number|null>(null);
 	const allPossibleMoves = useMemo(() => findAllPossibleMoves(tiles, playerTurn), [tiles, playerTurn]);
 	const selectedPossibleMoves = selectedTileIdx === null ? [] : allPossibleMoves.get(selectedTileIdx) || [];
+	const winner = useMemo(() => {
+		if ([...allPossibleMoves.values()].every(possibleMoves => possibleMoves.length === 0)) {
+			return playerTurn === Player.White ? Player.Black : Player.White;
+		}
+
+		return null;
+	}, [allPossibleMoves, tiles, playerTurn]);
 
 	let tileRenders: Array<Array<JSX.Element>> = [];
 	for (let y = 0; y < GRID_HEIGHT; y++) {
@@ -114,16 +159,21 @@ function Board({tiles, playerTurn, onMovePiece}: BoardProps) {
 		}
 	}
 
+
+
 	return (
-		<table className="board">
-			<tbody>
-				{tileRenders.map((tileRendersRow, y) => 
-					<tr key={y}>
-						{tileRendersRow.map((tile, x) => tile)}
-					</tr>
-				)}
-			</tbody>
-		</table>
+		<div>
+			{winner !== null && <div>{Player[winner]} Wins!</div>}
+			<table className="board">
+				<tbody>
+					{tileRenders.map((tileRendersRow, y) => 
+						<tr key={y}>
+							{tileRendersRow.map((tile, x) => tile)}
+						</tr>
+					)}
+				</tbody>
+			</table>
+		</div>
 	);
 }
 
