@@ -12,5 +12,5 @@
     "lib": ["es2019", "dom"],
     "downlevelIteration": true
   },
-  "files": ["src/index.tsx", "src/chess-pieces.tsx", "src/custom.d.ts"]
+  "files": ["src/index.tsx", "src/custom.d.ts"]
 }

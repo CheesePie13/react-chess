@@ -1,6 +1,3 @@
-export const GRID_WIDTH = 8;
-export const GRID_HEIGHT = 8;
-
 export enum Player {
 	White,
 	Black

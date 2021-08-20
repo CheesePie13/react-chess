@@ -1,5 +1,5 @@
-import { Player, Piece, TileData, GRID_WIDTH } from "./constants";
-import { coordToIdx, idxAdd, idxAddRelative, idxSub, idxToCoord } from "./utils"
+import { Player, Piece, TileData } from "./types";
+import * as BoardUtils from "./board-utils"
 
 function findPossibleMoves(selectedTileIdx: number|null, tiles: ReadonlyMap<number,TileData>) {
 	if (selectedTileIdx == null) {
@@ -45,7 +45,7 @@ function isValidMove(fromIdx: number, toIdx: number, tiles: ReadonlyMap<number,T
 		return false;
 	}
 
-	let [xDelta, yDelta] = idxSub(toIdx, fromIdx);
+	let [xDelta, yDelta] = BoardUtils.idxSub(toIdx, fromIdx);
 	if (tile.piece === Piece.King && Math.abs(xDelta) > 1) {
 		return isValidCastlingMove(fromIdx, toIdx, tiles, playerTurn);
 	}
@@ -55,13 +55,6 @@ function isValidMove(fromIdx: number, toIdx: number, tiles: ReadonlyMap<number,T
 	newTiles.delete(fromIdx);
 
 	let isValid = !isInCheck(newTiles, playerTurn);
-	// let [fromX, fromY] = idxToCoord(fromIdx);
-	// let [toX, toY] = idxToCoord(toIdx);
-	// if (isValid) {
-	// 	console.log("  valid from (" + fromX + ", " + fromY + ") to (" + toX + ", " + toY + ")");
-	// } else {
-	// 	console.log("Invalid from (" + fromX + ", " + fromY + ") to (" + toX + ", " + toY + ")");
-	// }
 
 	return isValid;
 }
@@ -72,8 +65,8 @@ function isValidCastlingMove(fromIdx: number, toIdx: number, tiles: ReadonlyMap<
 		return false;
 	}
 
-	let [fromX, fromY] = idxToCoord(fromIdx);
-	let [toX, toY]     = idxToCoord(toIdx);
+	let [fromX, fromY] = BoardUtils.idxToCoord(fromIdx);
+	let [toX, toY]     = BoardUtils.idxToCoord(toIdx);
 
 	if (fromY !== toY) {
 		return false;
@@ -87,7 +80,7 @@ function isValidCastlingMove(fromIdx: number, toIdx: number, tiles: ReadonlyMap<
 		x += dir;
 
 		let newTiles = new Map(tiles);
-		let idx = coordToIdx(x, y);
+		let idx = BoardUtils.coordToIdx(x, y);
 		newTiles.set(idx, tile);
 		newTiles.delete(fromIdx);
 
@@ -126,7 +119,7 @@ function findPossibleMovesInDirection(selectedTileIdx: number, selectedTile: Til
 	let x = xDir;
 	let y = yDir;
 
-	let idx = idxAdd(selectedTileIdx, x, y);
+	let idx = BoardUtils.idxAdd(selectedTileIdx, x, y);
 	while (idx != null) {
 		let tile = tiles.get(idx);
 		if (tile !== undefined) {
@@ -140,14 +133,14 @@ function findPossibleMovesInDirection(selectedTileIdx: number, selectedTile: Til
 
 		x += xDir;
 		y += yDir;
-		idx = idxAdd(selectedTileIdx, x, y);
+		idx = BoardUtils.idxAdd(selectedTileIdx, x, y);
 	}
 
 	return moves;
 }
 
 function findPossibleMove(selectedTileIdx: number, selectedTile: TileData, tiles: ReadonlyMap<number,TileData>, xRelative: number, yRelative: number) {
-	let idx = idxAddRelative(selectedTileIdx, selectedTile.owner, xRelative, yRelative);
+	let idx = BoardUtils.idxAddRelative(selectedTileIdx, selectedTile.owner, xRelative, yRelative);
 	if (idx == null) {
 		return [];
 	}
@@ -157,7 +150,7 @@ function findPossibleMove(selectedTileIdx: number, selectedTile: TileData, tiles
 }
 
 function findPossibleMoveAttack(selectedTileIdx: number, selectedTile: TileData, tiles: ReadonlyMap<number,TileData>, xRelative: number, yRelative: number) {
-	let idx = idxAddRelative(selectedTileIdx, selectedTile.owner, xRelative, yRelative);
+	let idx = BoardUtils.idxAddRelative(selectedTileIdx, selectedTile.owner, xRelative, yRelative);
 	if (idx == null) {
 		return [];
 	}
@@ -167,7 +160,7 @@ function findPossibleMoveAttack(selectedTileIdx: number, selectedTile: TileData,
 }
 
 function findPossibleMoveNoAttack(selectedTileIdx: number, selectedTile: TileData, tiles: ReadonlyMap<number,TileData>, xRelative: number, yRelative: number) {
-	let idx = idxAddRelative(selectedTileIdx, selectedTile.owner, xRelative, yRelative);
+	let idx = BoardUtils.idxAddRelative(selectedTileIdx, selectedTile.owner, xRelative, yRelative);
 	if (idx == null) {
 		return [];
 	}
@@ -262,9 +255,9 @@ function findPossibleKingMoves(selectedTileIdx: number, selectedTile: TileData, 
 
 	// Castling
 	if (!selectedTile.hasMoved) {
-		let [selectedTileX, selectedTileY] = idxToCoord(selectedTileIdx);
+		let [selectedTileX, selectedTileY] = BoardUtils.idxToCoord(selectedTileIdx);
 
-		let leftRookIdx = coordToIdx(0, selectedTileY);
+		let leftRookIdx = BoardUtils.coordToIdx(0, selectedTileY);
 		let leftRookTile = tiles.get(leftRookIdx);
 		if (leftRookTile !== undefined 
 				&& leftRookTile.hasMoved === false 
@@ -274,7 +267,7 @@ function findPossibleKingMoves(selectedTileIdx: number, selectedTile: TileData, 
 			// Check that spaces between are empty
 			let canMove = true;
 			for (let x = 1; x < selectedTileX; x++) {
-				let idx = coordToIdx(x, selectedTileY);
+				let idx = BoardUtils.coordToIdx(x, selectedTileY);
 				if (tiles.get(idx) !== undefined) {
 					canMove = false;
 					break;
@@ -282,14 +275,14 @@ function findPossibleKingMoves(selectedTileIdx: number, selectedTile: TileData, 
 			}
 
 			if (canMove) {
-				let moveIdx = idxAdd(selectedTileIdx, -2, 0);
+				let moveIdx = BoardUtils.idxAdd(selectedTileIdx, -2, 0);
 				if (moveIdx !== null) {
 					moves.push(moveIdx);
 				}
 			}
 		}
 
-		let rightRookIdx = coordToIdx(GRID_WIDTH - 1, selectedTileY);
+		let rightRookIdx = BoardUtils.coordToIdx(BoardUtils.WIDTH - 1, selectedTileY);
 		let rightRookTile = tiles.get(rightRookIdx);
 		if (rightRookTile !== undefined 
 				&& rightRookTile.hasMoved === false 
@@ -298,8 +291,8 @@ function findPossibleKingMoves(selectedTileIdx: number, selectedTile: TileData, 
 			
 			// Check that spaces between are empty
 			let canMove = true;
-			for (let x = selectedTileX + 1; x < GRID_WIDTH - 1; x++) {
-				let idx = coordToIdx(x, selectedTileY);
+			for (let x = selectedTileX + 1; x < BoardUtils.WIDTH - 1; x++) {
+				let idx = BoardUtils.coordToIdx(x, selectedTileY);
 				if (tiles.get(idx) !== undefined) {
 					canMove = false;
 					break;
@@ -307,7 +300,7 @@ function findPossibleKingMoves(selectedTileIdx: number, selectedTile: TileData, 
 			}
 
 			if (canMove) {
-				let moveIdx = idxAdd(selectedTileIdx, 2, 0);
+				let moveIdx = BoardUtils.idxAdd(selectedTileIdx, 2, 0);
 				if (moveIdx !== null) {
 					moves.push(moveIdx);
 				}
