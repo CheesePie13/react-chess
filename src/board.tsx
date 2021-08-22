@@ -1,24 +1,39 @@
-import { Player, Piece, TileData } from "./types";
+import { Player, Piece, Tile } from "./types";
 
 export const WIDTH = 8;
 export const HEIGHT = 8;
 
+/**
+ * Convert a board idx to an x and y coordinate
+ */
 export function idxToCoord(idx: number) {
 	return [idx % WIDTH, Math.floor(idx / WIDTH)];
 }
 
+/**
+ * Convert an x and y coordinate to a board idx
+ */
 export function coordToIdx(x: number, y: number) {
 	return y * WIDTH + x;
 }
 
+/**
+ * Is the x and y coordinate on the board?
+ */
 export function isValidCoord(x: number, y:number) {
 	return x >= 0 && x < WIDTH && y >= 0 && y < HEIGHT;
 }
 
+/**
+ * Is the idx on the board?
+ */
 export function isValidIdx(idx: number) {
 	return idx >= 0 && idx < WIDTH * HEIGHT;
 }
 
+/**
+ * And an x and y offset to the tile idx
+ */
 export function idxAdd(idx: number, xOffset: number, yOffset: number) {
 	let [x, y] = idxToCoord(idx);
 	x += xOffset;
@@ -31,7 +46,10 @@ export function idxAdd(idx: number, xOffset: number, yOffset: number) {
 	return coordToIdx(x, y);
 }
 
-// White: Forward is up (negative), Black: Forward is down (positive)
+/**
+ * And an x and y offset to the tile idx, so that positive y is forward 
+ * and positive x is right from both player's perspectives
+ */
 export function idxAddRelative(idx: number, player: Player, xOffset: number, yOffset: number) {
 	if (player === Player.White) {
 		xOffset *= -1;
@@ -41,13 +59,19 @@ export function idxAddRelative(idx: number, player: Player, xOffset: number, yOf
 	return idxAdd(idx, xOffset, yOffset);
 }
 
+/**
+ * Get the x and y difference between 2 board indexes
+ */
 export function idxSub(toIdx: number, fromIdx: number) {
 	let [fromX, fromY] = idxToCoord(fromIdx);
 	let [toX, toY]     = idxToCoord(toIdx);
 	return [toX - fromX, toY - fromY];
 }
 
-export function createStarterBoard(): ReadonlyMap<number,TileData> {
+/**
+ * Create the tile map for the standard chess stating board
+ */
+export function createStarterBoard(): ReadonlyMap<number,Tile> {
 	return new Map([
 		// Black pieces at the top
 		[ 0, {owner: Player.Black, piece: Piece.Rook,   hasMoved: false}],

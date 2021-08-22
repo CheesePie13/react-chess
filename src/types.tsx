@@ -12,7 +12,7 @@ export enum Piece {
 	King
 }
 
-export interface TileData {
+export interface Tile {
 	readonly owner: Player,
 	readonly piece: Piece,
 	readonly hasMoved: boolean

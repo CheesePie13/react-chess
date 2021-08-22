@@ -13,8 +13,9 @@ import BlackQueenImg from "./piece-images/black-queen.svg";
 import BlackKingImg from "./piece-images/black-king.svg";
 
 import { Player, Piece } from "./types"
+import { assertIsDefined } from "./utils";
 
-const WhitePieceImages: ReadonlyMap<Piece, string|null> = new Map([
+const WhitePieceImages: ReadonlyMap<Piece, string> = new Map([
 	[Piece.Pawn, WhitePawnImg], 
 	[Piece.Bishop, WhiteBishopImg], 
 	[Piece.Knight, WhiteKnightImg], 
@@ -23,7 +24,7 @@ const WhitePieceImages: ReadonlyMap<Piece, string|null> = new Map([
 	[Piece.King, WhiteKingImg]
 ]);
 
-const BlackPieceImages: ReadonlyMap<Piece, string|null> = new Map([
+const BlackPieceImages: ReadonlyMap<Piece, string> = new Map([
 	[Piece.Pawn, BlackPawnImg], 
 	[Piece.Bishop, BlackBishopImg], 
 	[Piece.Knight, BlackKnightImg], 
@@ -32,7 +33,20 @@ const BlackPieceImages: ReadonlyMap<Piece, string|null> = new Map([
 	[Piece.King, BlackKingImg]
 ]);
 
-export const PieceImages: ReadonlyMap<Player, ReadonlyMap<Piece, string | null>> = new Map([
+const PieceImages: ReadonlyMap<Player, ReadonlyMap<Piece, string | null>> = new Map([
 	[Player.White, WhitePieceImages],
 	[Player.Black, BlackPieceImages]
 ]);
+
+/**
+ * Get the chess piece image source url for the piece and player
+ */
+export function getPieceImage(player: Player, piece: Piece) {
+	let playerPieceImages = PieceImages.get(player);
+	assertIsDefined(playerPieceImages, "All players should have piece images.");
+
+	let pieceImage = playerPieceImages.get(piece);
+	assertIsDefined(pieceImage, "All pieces should have an image.");
+
+	return pieceImage;
+}

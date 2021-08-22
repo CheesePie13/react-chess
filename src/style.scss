@@ -10,40 +10,50 @@ html {
 	box-sizing: inherit;
 }
 
-table.board {
-	margin-left: auto;
-	margin-right: auto;
-	border-collapse: separate;
-	border: 1px solid black;
-	td {
-		width: 80px;
-		height: 80px;
+.chess-app {
+
+	.status {
+		text-align: center;
+	}
+
+	table.board {
+		margin-left: auto;
+		margin-right: auto;
+		border-collapse: separate;
 		border: 1px solid black;
-		background-color: white;
+		td {
+			width: 80px;
+			height: 80px;
+			border: 1px solid black;
+			background-color: white;
 
-		&.checkered {
-			background-color: grey;
-		}
-		&.selected {
-			border: 4px solid black;
-		}
-		&.highlighted {
-			background-color: #98d6fa;
-		}
-		&.clickable {
-			cursor: pointer;
-		}
+			&.checkered {
+				background-color: grey;
+			}
+			
+			&.selected {
+				border: 4px solid black;
+				cursor: pointer;
+			}
 
-		img.piece {
-			width: 70px;
-			height: 70px;
-			display: block;
-			margin: auto;
-		}
+			&.highlighted {
+				background-color: #98d6fa;
+				cursor: pointer;
+			}
 
-		// &:hover {
-		// 	background-color: #dddddd;
-		// }
+			img.piece {
+				width: 70px;
+				height: 70px;
+				display: block;
+				margin: auto;
+			}
+		}
+	}
+
+	button.restart {
+		display: block;
+		margin: auto;
+		margin-top: 20px;
 	}
 }
 
@@ -77,20 +87,3 @@ table.board {
 		}
 	}
 }
-
-// .modal {
-// 	position: fixed;
-// 	left: 0;
-// 	top: 0;
-// 	width: 100%;
-// 	height: 100%;
-// 	background-color: rgba(0, 0, 0, 0.4);
-
-// 	.modal-content {
-// 		background-color: white;
-// 		width: fit-content;
-// 		height: fit-content;
-// 		margin: auto;
-// 		padding: 20px;
-// 	}
-// }

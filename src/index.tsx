@@ -3,150 +3,122 @@ import "./style.scss";
 import { useState, useMemo } from "react";
 import ReactDOM from "react-dom";
 
-import { Player, Piece, TileData } from "./types";
-import { PieceImages } from "./piece-images";
-import * as BoardUtils from "./board-utils";
-import * as Utils from "./utils";
-import { findAllPossibleMoves } from "./game-logic"
+import { Player, Piece, Tile } from "./types";
+import { getPieceImage } from "./piece-images";
+import * as Board from "./board";
+import { findAllMovesAndWinner, getOtherPlayer, performMove, performPawnPromotion } from "./game-logic"
 
+/**
+ * A local multiplayer chess game
+ */
 function ChessApp() {
-	const [tiles, setTiles] = useState(BoardUtils.createStarterBoard);
+	const [tiles, setTiles] = useState(Board.createStarterBoard);
 	const [playerTurn, setPlayerTurn] = useState(Player.White);
+	const [allPossibleMoves, winner] = useMemo(() => findAllMovesAndWinner(tiles, playerTurn), [tiles, playerTurn]);
 	const [pawnPromotionModalCallback, setPawnPromotionModalCallback] = useState<((piece: Piece) => void)|null>(null);
 
+	function onMovePiece(fromIdx: number, toIdx: number) {
+		let [newTiles, pawnPromotionIdx] = performMove(fromIdx, toIdx, tiles);
+		if (pawnPromotionIdx !== null) {
+			let pawnIdx = pawnPromotionIdx;
+			setPawnPromotionModalCallback(() => (piece: Piece) => {
+				newTiles = performPawnPromotion(pawnIdx, piece, newTiles);
+				setTiles(newTiles);
+				setPlayerTurn(getOtherPlayer(playerTurn));
+				setPawnPromotionModalCallback(null);
+			});
+		} else {
+			setTiles(newTiles);
+			setPlayerTurn(getOtherPlayer(playerTurn));
+		}
+	}
+
+	function onRestartGame() {
+		setTiles(Board.createStarterBoard());
+		setPlayerTurn(Player.White);
+	}
+
+	let status;
+	if (winner !== null) {
+		status = <h2 className="status">{Player[winner]} Wins!</h2>;
+	} else {
+		status = <h2 className="status">{"Player Turn: " + Player[playerTurn]}</h2>
+	}
+
 	return (
-		<div>
-			<PawnPromotionModal playerTurn={playerTurn} onPieceSelected={pawnPromotionModalCallback}/>
-			<Board 
-				tiles={tiles} playerTurn={playerTurn} 
-				onMovePiece={(fromIdx, toIdx) => {
-					let tile = tiles.get(fromIdx);
-					if (tile === undefined) {
-						return;
-					}
-
-					let newTile = {...tile, hasMoved: true};
-					let newTiles = new Map(tiles);
-					
-					newTiles.delete(fromIdx);
-					newTiles.set(toIdx, newTile);
-
-					// Check if castling
-					let [toX, toY] = BoardUtils.idxToCoord(toIdx);
-					let [xDelta, yDelta] = BoardUtils.idxSub(toIdx, fromIdx);
-					if (tile.piece === Piece.King && Math.abs(xDelta) > 1) {
-						if (xDelta > 1) {
-							let rookTileIdx = BoardUtils.coordToIdx(BoardUtils.WIDTH - 1, toY);
-							let rookTile = tiles.get(rookTileIdx);
-							Utils.assertIsDefined(rookTile, "Rook is missing but castling move should have already been validate.");
-
-							if (rookTile !== undefined) {
-								let newRookTile = {...rookTile, hasMoved: true};
-								let newRookTileIdx = BoardUtils.coordToIdx(toX - 1, toY);
-								newTiles.set(newRookTileIdx, newRookTile);
-								newTiles.delete(rookTileIdx);
-							}
-
-						} else if (xDelta < 1) {
-							let rookTileIdx = BoardUtils.coordToIdx(0, toY);
-							let rookTile = tiles.get(rookTileIdx);
-							Utils.assertIsDefined(rookTile, "Rook is missing but castling move should have already been validate.");
-
-							let newRookTile = {...rookTile, hasMoved: true};
-							let newRookTileIdx = BoardUtils.coordToIdx(toX + 1, toY);
-							newTiles.set(newRookTileIdx, newRookTile);
-							newTiles.delete(rookTileIdx);
-						}
-					}
-
-					// Check if promoting pawn
-					if (tile.piece === Piece.Pawn && BoardUtils.idxAddRelative(toIdx, playerTurn, 0, 1) === null) {
-						setPawnPromotionModalCallback(() => (piece: Piece) => {
-							newTile.piece = piece;
-							setTiles(newTiles);
-							setPlayerTurn(playerTurn === Player.White ? Player.Black : Player.White);
-							setPawnPromotionModalCallback(null);
-						});
-						return;
-					}
-
-					setTiles(newTiles);
-					setPlayerTurn(playerTurn === Player.White ? Player.Black : Player.White);
-				}}
-			/>
-			<div>{"Player Turn: " + Player[playerTurn]}</div>
-			<button onClick={() => {
-				setTiles(BoardUtils.createStarterBoard());
-				setPlayerTurn(Player.White);
-			}}>
-				Restart
-			</button>
+		<div className="chess-app">
+			<PawnPromotionModal player={playerTurn} onPieceSelected={pawnPromotionModalCallback}/>
+			{status}
+			<BoardView tiles={tiles} playerTurn={playerTurn} allPossibleMoves={allPossibleMoves} 
+				onMovePiece={onMovePiece} onRestartGame={onRestartGame}/>
+			<button className="restart" onClick={onRestartGame}>Restart</button>
 		</div>
 	);
 }
 
-type BoardProps = {tiles: ReadonlyMap<number,TileData>, playerTurn: Player, onMovePiece: (fromIdx: number, toIdx: number) => void};
-function Board({tiles, playerTurn, onMovePiece}: BoardProps) {
+
+interface BoardViewProps {
+	tiles: ReadonlyMap<number,Tile>, 
+	playerTurn: Player,
+	allPossibleMoves: ReadonlyMap<number, Array<number>>
+	onMovePiece: (fromIdx: number, toIdx: number) => void,
+	onRestartGame: () => void
+};
+
+/**
+ * A chess board that handles the logic for displaying the board and selecting tiles
+ */
+function BoardView({tiles, playerTurn, allPossibleMoves, onMovePiece, onRestartGame}: BoardViewProps) {
 	const [selectedTileIdx, setSelectedTileIdx] = useState<number|null>(null);
-	const allPossibleMoves = useMemo(() => findAllPossibleMoves(tiles, playerTurn), [tiles, playerTurn]);
 	const selectedPossibleMoves = selectedTileIdx === null ? [] : allPossibleMoves.get(selectedTileIdx) || [];
-	const winner = useMemo(() => {
-		if ([...allPossibleMoves.values()].every(possibleMoves => possibleMoves.length === 0)) {
-			return playerTurn === Player.White ? Player.Black : Player.White;
+
+	function onTileClick(idx: number) {
+		if (selectedTileIdx !== null) {
+			// Do the move if valid and unselect
+			if (selectedPossibleMoves.includes(idx)) {
+				onMovePiece(selectedTileIdx, idx);
+			}
+			setSelectedTileIdx(null);
+		} else {
+			// Select the tile if it has possible moves
+			let possibleMoves = allPossibleMoves.get(idx);
+			if (possibleMoves !== undefined && possibleMoves.length > 0) {
+				setSelectedTileIdx(idx)
+			}
 		}
+	}
 
-		return null;
-	}, [allPossibleMoves, tiles, playerTurn]);
-
-	let tileRenders: Array<Array<JSX.Element>> = [];
-	for (let y = 0; y < BoardUtils.HEIGHT; y++) {
-		tileRenders[y] = [];
-		for (let x = 0; x < BoardUtils.WIDTH; x++) {
-			let idx = BoardUtils.coordToIdx(x, y);
+	let tileViews: Array<Array<JSX.Element>> = [];
+	for (let y = 0; y < Board.HEIGHT; y++) {
+		tileViews[y] = [];
+		for (let x = 0; x < Board.WIDTH; x++) {
+			let idx = Board.coordToIdx(x, y);
 			let tile = tiles.get(idx);
 			let selected = selectedTileIdx === idx;
-			
-			let selectable = selectedTileIdx != null 
-				? selectedPossibleMoves.includes(idx) || selectedTileIdx === idx
-				: tile?.owner === playerTurn;
+			let possibleMoves = allPossibleMoves.get(idx) || [];
 
-			let possibleMoves = allPossibleMoves.get(idx);
-			let highlighted = (selectedTileIdx !== null && selectedPossibleMoves.includes(idx)) 
-				|| (selectedTileIdx === null && possibleMoves !== undefined && possibleMoves.length > 0);
+			let highlighted;
+			if (selectedTileIdx !== null) {
+				highlighted = selectedPossibleMoves.includes(idx);
+			} else {
+				highlighted = possibleMoves.length > 0;
+			}
 
-			tileRenders[y][x] = (
-				<Tile 
-					key={x} tile={tile} idx={idx}
-					selected={selected}
-					clickable={selectable}
-					highlighted={highlighted}
-					onClick={() => {
-						if (selectedTileIdx === idx) {
-							setSelectedTileIdx(null);
-						} else if (selectedTileIdx != null) {
-							if (selectedPossibleMoves.includes(idx)) {
-								onMovePiece(selectedTileIdx, idx);
-							}
-							setSelectedTileIdx(null);
-						} else if (tile?.owner === playerTurn) {
-							setSelectedTileIdx(idx);
-						}
-					}}
+			tileViews[y][x] = (
+				<TileView key={x} tile={tile} idx={idx} selected={selected}
+					highlighted={highlighted} onClick={onTileClick}
 				/>
 			);
 		}
 	}
 
-
-
 	return (
 		<div>
-			{winner !== null && <div>{Player[winner]} Wins!</div>}
 			<table className="board">
 				<tbody>
-					{tileRenders.map((tileRendersRow, y) => 
+					{tileViews.map((tileViewRow, y) => 
 						<tr key={y}>
-							{tileRendersRow.map((tile, x) => tile)}
+							{tileViewRow.map((tile, x) => tile)}
 						</tr>
 					)}
 				</tbody>
@@ -155,10 +127,23 @@ function Board({tiles, playerTurn, onMovePiece}: BoardProps) {
 	);
 }
 
-type TileProps = {tile?: TileData|null, idx: number, selected: boolean, clickable: boolean, highlighted: boolean, onClick:() => void};
-function Tile({tile, idx, selected, clickable, highlighted, onClick}: TileProps) {
+
+interface TileViewProps {
+	tile?: Tile,
+	idx: number,
+	selected: boolean,
+	highlighted: boolean,
+	onClick:(idx: number) => void
+};
+
+/**
+ * A single tile on the chess board which may or may not have a piece on it
+ */
+function TileView({tile, idx, selected, highlighted, onClick}: TileViewProps) {
 	let tileClass = "";
-	let [x, y] = BoardUtils.idxToCoord(idx);
+
+	// Add checkerboard pattern to tiles
+	let [x, y] = Board.idxToCoord(idx);
 	if (((y % 2) + x) % 2 === 0) {
 		tileClass += "checkered ";
 	}
@@ -167,41 +152,48 @@ function Tile({tile, idx, selected, clickable, highlighted, onClick}: TileProps)
 		tileClass += "selected ";
 	}
 
-	if (clickable) {
-		tileClass += "clickable ";
-	}
-
 	if (highlighted) {
 		tileClass += "highlighted "
 	}
 
-	if (tile != null) {
-		let pieceImage = PieceImages.get(tile.owner)?.get(tile.piece);
-		if (pieceImage != null) {
-			return (
-				<td className={tileClass} onClick={onClick}>
-					<img className="piece" src={pieceImage}/>
-				</td>
-			);
-		}
+	if (tile === undefined) {
+		return (<td className={tileClass} onClick={() => onClick(idx)} />);
 	}
 
-	return (<td className={tileClass} onClick={onClick} />);
+	let pieceImage = getPieceImage(tile.owner, tile.piece);
+	return (
+		<td className={tileClass} onClick={() => onClick(idx)}>
+			<img className="piece" src={pieceImage}/>
+		</td>
+	);
 }
 
-function PawnPromotionModal({playerTurn, onPieceSelected}: {playerTurn: Player, onPieceSelected: ((piece: Piece) => void)|null}) {
+
+interface PawnPromotionModalProps {
+	player: Player, 
+	onPieceSelected: ((piece: Piece) => void) | null
+}
+
+/**
+ * A full screen dialog for the player to choose the piece to promote 
+ * a pawn to when it reaches the oposite end of the board
+ * 
+ * @param onPieceSelected The dialog will show when this callback is not null
+ */ 
+function PawnPromotionModal({player, onPieceSelected}: PawnPromotionModalProps) {
 	if (onPieceSelected === null) {
 		return null;
 	}
 
 	let pieces = [Piece.Queen, Piece.Rook, Piece.Bishop, Piece.Knight];
-	let pieceImages = PieceImages;
 
 	let modal = (
 		<div className="modal">
 			<div className="modal-content">
 				{pieces.map(piece => 
-					<img className="piece" src={pieceImages.get(playerTurn)?.get(piece) || undefined} onClick={() => onPieceSelected(piece)} />
+					<img key={piece} className="piece" 
+						src={getPieceImage(player, piece)} 
+						onClick={() => onPieceSelected(piece)} />
 				)}
 			</div>
 		</div>
@@ -211,6 +203,7 @@ function PawnPromotionModal({playerTurn, onPieceSelected}: {playerTurn: Player, 
 	if (modalContainer === null) {
 		return null;
 	}
+
 	return ReactDOM.createPortal(modal, modalContainer);
 }
 
