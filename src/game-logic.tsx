@@ -441,3 +441,12 @@ function findPossibleKingMoves(selectedTileIdx: number, selectedTile: Tile, tile
 
 	return moves;
 }
+
+export const testingExports = {
+	findPossiblePawnMoves,
+	findPossibleBishopMoves,
+	findPossibleKnightMoves,
+	findPossibleRookMoves,
+	findPossibleQueenMoves,
+	findPossibleKingMoves
+}

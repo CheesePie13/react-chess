@@ -12,6 +12,9 @@ import { findAllMovesAndWinner, getOtherPlayer, performMove, performPawnPromotio
  * A local multiplayer chess game
  */
 function ChessApp() {
+	let a = 1;
+	console.assert(a === 2);
+
 	const [tiles, setTiles] = useState(Board.createStarterBoard);
 	const [playerTurn, setPlayerTurn] = useState(Player.White);
 	const [allPossibleMoves, winner] = useMemo(() => findAllMovesAndWinner(tiles, playerTurn), [tiles, playerTurn]);

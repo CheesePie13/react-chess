@@ -7,14 +7,19 @@ export const HEIGHT = 8;
  * Convert a board idx to an x and y coordinate
  */
 export function idxToCoord(idx: number) {
-	return [idx % WIDTH, Math.floor(idx / WIDTH)];
+	const x = idx % WIDTH;
+	const y = Math.floor(idx / WIDTH);
+	console.assert(isValidCoord(x, y));
+	return [x, y];
 }
 
 /**
  * Convert an x and y coordinate to a board idx
  */
 export function coordToIdx(x: number, y: number) {
-	return y * WIDTH + x;
+	const idx = y * WIDTH + x;
+	console.assert(isValidIdx(idx));
+	return idx;
 }
 
 /**
@@ -52,11 +57,10 @@ export function idxAdd(idx: number, xOffset: number, yOffset: number) {
  */
 export function idxAddRelative(idx: number, player: Player, xOffset: number, yOffset: number) {
 	if (player === Player.White) {
-		xOffset *= -1;
-		yOffset *= -1;
+		return idxAdd(idx, -xOffset, -yOffset);
+	} else {
+		return idxAdd(idx, xOffset, yOffset);
 	}
-
-	return idxAdd(idx, xOffset, yOffset);
 }
 
 /**
