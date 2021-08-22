@@ -1,7 +1,7 @@
 import "./style.scss";
 
 import { useState, useMemo } from "react";
-import ReactDOM from "react-dom";
+import * as ReactDOM from "react-dom";
 
 import { Player, Piece, Tile } from "./types";
 import { getPieceImage } from "./piece-images";
@@ -15,7 +15,7 @@ function ChessApp() {
 	const [tiles, setTiles] = useState(Board.createStarterBoard);
 	const [playerTurn, setPlayerTurn] = useState(Player.White);
 	const [allPossibleMoves, winner] = useMemo(() => findAllMovesAndWinner(tiles, playerTurn), [tiles, playerTurn]);
-	const [pawnPromotionModalCallback, setPawnPromotionModalCallback] = useState<((piece: Piece) => void)|null>(null);
+	const [pawnPromotionModalCallback, setPawnPromotionModalCallback] = useState<((piece: Piece) => void) | null>(null);
 
 	function onMovePiece(fromIdx: number, toIdx: number) {
 		let [newTiles, pawnPromotionIdx] = performMove(fromIdx, toIdx, tiles);

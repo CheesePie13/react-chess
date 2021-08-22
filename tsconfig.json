@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "allowSyntheticDefaultImports": true,
     "noImplicitAny": true,
     "strict": true,
     "module": "es6",
@@ -12,5 +11,5 @@
     "lib": ["es2019", "dom"],
     "downlevelIteration": true
   },
-  "files": ["src/index.tsx", "src/custom.d.ts"]
+  "include": ["src/**/*"]
 }
