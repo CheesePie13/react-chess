@@ -1,5 +1,7 @@
 # react-chess
-A local multiplayer chess game made with TypeScript with React.
+A local multiplayer chess game made with TypeScript and React. 
+
+You can play it at: https://cheesepie13.github.io/react-chess 
 
 ## Building
 - Run `npm run build` to generate a production build of the game
